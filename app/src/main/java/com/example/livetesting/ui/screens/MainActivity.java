@@ -4,9 +4,13 @@ import android.annotation.SuppressLint;
 import android.graphics.Canvas;
 import android.os.Bundle;
 import android.util.Log;
+import android.window.OnBackInvokedDispatcher;
 
+import androidx.activity.OnBackPressedCallback;
+import androidx.activity.OnBackPressedDispatcher;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -17,6 +21,7 @@ import com.example.livetesting.data_source.models.CategoriesResponse;
 import com.example.livetesting.ui.view_model.MainViewModel;
 import com.example.livetesting.ui.view_model.MainViewModelProviderFactory;
 import com.example.livetesting.databinding.ActivityMainBinding;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
     private MainViewModel viewModel;
     private final ArrayList<CategoriesResponse.categories> categoriesList = new ArrayList<>();
     private RcvAdapter adapter;
+    private boolean isItemClicked = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,33 +43,48 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
         // initialized the view model
         viewModel = new ViewModelProvider(this, new MainViewModelProviderFactory()).get(MainViewModel.class);
-        // call and observe the categories list
+        // item touch helper for drag and drop recycler item and swipe to delete the item
+        new ItemTouchHelper(getSimpleCallBack(categoriesList)).attachToRecyclerView(binding.rcvId);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // hist the api and observe the list
+        getCategoriesList();
+        // hit the api and observe the api error
+        viewModel.getError().observe(MainActivity.this, this::showError);
+        // this function is populate the data in the recycler view
+        populateRecyclerView();
+        // handle the back pressed
+        getBackPressedHandler();
+    }
+
+    // initialize the list
+    private void getCategoriesList() {
+        // call the api and observe the categories list
         viewModel.getCategories().observe(MainActivity.this, categories -> {
             categoriesList.clear();
             categoriesList.addAll(getSortedList(categories));
             adapter.notifyDataSetChanged();
         });
-        // call and observe the api error
-        viewModel.getError().observe(MainActivity.this, s -> Log.e("ApiError", s));
-        // populate the recycler view
-        populateRecyclerView();
-        // drag,drop and swap to delete
-        new ItemTouchHelper(getSimpleCallBack(categoriesList)).attachToRecyclerView(binding.rcvId);
     }
 
     // this function are initialized the recycler adapter and populate data to the recycler view
     private void populateRecyclerView() {
         binding.rcvId.setLayoutManager(new LinearLayoutManager(this));
         adapter = new RcvAdapter(categoriesList, categories -> {
+            // check the child count is above to 0 that case hit the api otherwise do nothing
             if (categories.getChild_count() > 0) {
                 viewModel.getSubCategories(categories.getPc_id()).observe(MainActivity.this, list -> {
                     categoriesList.clear();
-                    categoriesList.addAll(list);
+                    categoriesList.addAll(getSortedList(list));
                     adapter.notifyDataSetChanged();
+                    isItemClicked = true;
                 });
             }
         });
-        binding.rcvId.setAdapter(adapter);
+        binding.rcvId.setAdapter(adapter); // set the adapter
     }
 
     // this function are return the simple call back
@@ -87,6 +108,29 @@ public class MainActivity extends AppCompatActivity {
             }
 
         };
+    }
+
+    //  handle the back pressed
+    private void getBackPressedHandler() {
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // if item is clicked that case call the same api other wise go back or
+                if (isItemClicked) {
+                    getCategoriesList();
+                    isItemClicked = false;
+                } else {
+                    this.setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
+
+            }
+        });
+    }
+
+    // show the api error
+    private void showError(String error) {
+        Snackbar.make(binding.getRoot(), "The Error is :" + error, 2000).show();
     }
 
     //Sort the list items in ascending order (A...Z) and return it
