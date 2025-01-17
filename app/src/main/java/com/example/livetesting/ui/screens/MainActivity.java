@@ -1,6 +1,7 @@
 package com.example.livetesting.ui.screens;
 
 import android.annotation.SuppressLint;
+import android.graphics.Canvas;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -47,7 +48,8 @@ public class MainActivity extends AppCompatActivity {
         // populate the recycler view
         populateRecyclerView();
     }
-// this function are initialized the recycler adapter and populate data to the recycler view
+
+    // this function are initialized the recycler adapter and populate data to the recycler view
     private void populateRecyclerView() {
         binding.rcvId.setLayoutManager(new LinearLayoutManager(this));
         adapter = new RcvAdapter(categoriesList, categories -> {
@@ -63,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
         // drag,drop and swap to delete
         new ItemTouchHelper(getSimpleCallBack(categoriesList)).attachToRecyclerView(binding.rcvId);
     }
+
     // this function are return the simple call back
     private ItemTouchHelper.SimpleCallback getSimpleCallBack(List<CategoriesResponse.categories> categoriesList) {
         return new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN | ItemTouchHelper.START | ItemTouchHelper.END, ItemTouchHelper.RIGHT | ItemTouchHelper.LEFT) {
@@ -73,7 +76,6 @@ public class MainActivity extends AppCompatActivity {
                 int toPosition = target.getAdapterPosition();
                 Collections.swap(categoriesList, fromPosition, toPosition);
                 Objects.requireNonNull(recyclerView.getAdapter()).notifyItemMoved(fromPosition, toPosition);
-                adapter.notifyItemMoved(fromPosition, toPosition);
                 return true;
             }
 
@@ -84,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
                 categoriesList.remove(item);
                 adapter.notifyItemRemoved(item);
             }
+            
         };
     }
 
