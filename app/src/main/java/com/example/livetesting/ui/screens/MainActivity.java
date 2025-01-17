@@ -27,7 +27,7 @@ import java.util.Objects;
 public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private MainViewModel viewModel;
-    private final List<CategoriesResponse.categories> categoriesList = new ArrayList<>();
+    private final ArrayList<CategoriesResponse.categories> categoriesList = new ArrayList<>();
     private RcvAdapter adapter;
 
     @Override
@@ -40,13 +40,15 @@ public class MainActivity extends AppCompatActivity {
         // call and observe the categories list
         viewModel.getCategories().observe(MainActivity.this, categories -> {
             categoriesList.clear();
-            categoriesList.addAll(categories);
+            categoriesList.addAll(getSortedList(categories));
             adapter.notifyDataSetChanged();
         });
         // call and observe the api error
         viewModel.getError().observe(MainActivity.this, s -> Log.e("ApiError", s));
         // populate the recycler view
         populateRecyclerView();
+        // drag,drop and swap to delete
+        new ItemTouchHelper(getSimpleCallBack(categoriesList)).attachToRecyclerView(binding.rcvId);
     }
 
     // this function are initialized the recycler adapter and populate data to the recycler view
@@ -62,8 +64,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         binding.rcvId.setAdapter(adapter);
-        // drag,drop and swap to delete
-        new ItemTouchHelper(getSimpleCallBack(categoriesList)).attachToRecyclerView(binding.rcvId);
     }
 
     // this function are return the simple call back
@@ -74,7 +74,6 @@ public class MainActivity extends AppCompatActivity {
             public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
                 int fromPosition = viewHolder.getAdapterPosition();
                 int toPosition = target.getAdapterPosition();
-                Collections.swap(categoriesList, fromPosition, toPosition);
                 Objects.requireNonNull(recyclerView.getAdapter()).notifyItemMoved(fromPosition, toPosition);
                 return true;
             }
@@ -86,8 +85,14 @@ public class MainActivity extends AppCompatActivity {
                 categoriesList.remove(item);
                 adapter.notifyItemRemoved(item);
             }
-            
+
         };
     }
 
+    //Sort the list items in ascending order (A...Z) and return it
+    public List<CategoriesResponse.categories> getSortedList(List<CategoriesResponse.categories> categoriesList) {
+
+        categoriesList.sort((categories, categories1) -> categories.getName().compareTo(categories1.getName()));
+        return categoriesList;
+    }
 }

@@ -13,6 +13,7 @@ import com.example.livetesting.databinding.RcvItemDesignBinding;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class RcvAdapter extends RecyclerView.Adapter<RcvAdapter.ViewHolder> {
@@ -33,7 +34,7 @@ public class RcvAdapter extends RecyclerView.Adapter<RcvAdapter.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        holder.binding.nameTvId.setText(getSortedList(categoriesList).get(position));
+        holder.binding.nameTvId.setText(categoriesList.get(position).getName());
         holder.itemView.setOnClickListener(view -> itemClickListener.onClicked(categoriesList.get(position)));
     }
 
@@ -44,18 +45,10 @@ public class RcvAdapter extends RecyclerView.Adapter<RcvAdapter.ViewHolder> {
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         private final RcvItemDesignBinding binding;
+
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             binding = RcvItemDesignBinding.bind(itemView);
         }
-    }
-    //Sort the list items in ascending order (A...Z) and return it
-    public List<String> getSortedList(List<CategoriesResponse.categories> categoriesList) {
-        List<String> sortedList = new ArrayList<>();
-        for (CategoriesResponse.categories categories : categoriesList) {
-            sortedList.add(categories.getName());
-        }
-        Collections.sort(sortedList);
-        return sortedList;
     }
 }
